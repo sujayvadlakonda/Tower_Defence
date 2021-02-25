@@ -13,6 +13,9 @@ def defaults args
   args.state.grid_goal  ||= [4, 4]
   args.state.walls ||= {
     [0, 4] => true,
+    [1, 3] => true,
+    [3, 1] => true,
+    # [4, 0] => true,
   }
 
   args.state.a_star.frontier ||= []
@@ -118,7 +121,7 @@ def calc_a_star args
   args.state.a_star.came_from[args.state.grid_start] = nil
 
   # Until a path to the goal has been found or there are no more tiles to explore
-  until args.state.a_star.came_from.has_key? args.state.grid_goal || args.state.a_star.frontier.empty?
+  until (args.state.a_star.came_from.has_key?(args.state.grid_goal)|| args.state.a_star.frontier.empty?)
     # For the first tile in the frontier
     tile_to_expand_from = args.state.a_star.frontier.shift
     # Add each of its neighbors to the frontier
@@ -127,6 +130,9 @@ def calc_a_star args
       args.state.a_star.came_from[tile] = tile_to_expand_from
     end
   end
+
+  # Stop calculating a path if the goal was never reached
+  return unless args.state.a_star.came_from.has_key? args.state.grid_goal
 
   # Fill path by tracing back from the goal
   current_cell = args.state.grid_goal
@@ -145,6 +151,9 @@ def calc_tanks args
 end
 
 def move_tanks args
+  # Remove tanks that have reached the end of their path
+  args.state.tanks.reject! { |tank| tank[:a_star].empty? }
+
   # Tanks have an array that has each tile it has to go to in order from a* path
   args.state.tanks.each do | tank |
     destination = tank[:a_star][0]
@@ -158,8 +167,6 @@ def move_tanks args
       tank[:a_star].shift
     end
   end
-  # Remove tanks that have reached the end of their path
-  args.state.tanks.reject! { |tank| tank[:a_star].empty? }
 end
 
 def calc_turrets args
@@ -234,6 +241,7 @@ def spawn_tank args
     path: args.state.tank_sprite_path,
     a_star: args.state.a_star.path.clone
   }
+  "SPawn tank complete"
 end
 
 def neighbors args, tile
