@@ -208,6 +208,7 @@ def calc_turrets args
 end
 
 def calc_bullets args
+  # Bullets aim for the center of their targets
   args.state.bullets.each { |bullet| move bullet, center_of(bullet[:target])}
   args.state.bullets.reject! { |b| b.intersect_rect? b[:target] }
 end
