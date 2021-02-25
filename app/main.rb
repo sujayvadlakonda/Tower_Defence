@@ -208,8 +208,15 @@ def calc_turrets args
 end
 
 def calc_bullets args
-  args.state.bullets.each { |bullet| move bullet, bullet[:target]}
+  args.state.bullets.each { |bullet| move bullet, center_of(bullet[:target])}
   args.state.bullets.reject! { |b| b.intersect_rect? b[:target] }
+end
+
+def center_of object
+  object = object.clone
+  object[:x] += 0.5
+  object[:y] += 0.5
+  object
 end
 
 def render_a_star args
