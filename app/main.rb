@@ -1,3 +1,8 @@
+# An example of some major components in a tower defence game
+# The pathing of the tanks is determined by A* algorithm -- try editing the walls
+
+# The turrets shoot bullets at the closest tank. The bullets are heat-seeking
+
 def tick args
   $gtk.reset if args.inputs.keyboard.key_down.r
   defaults args
@@ -11,6 +16,8 @@ def defaults args
   args.state.tile_size = 50
   args.state.grid_start ||= [0, 0]
   args.state.grid_goal  ||= [4, 4]
+
+  # Try editing these walls to see the path change!
   args.state.walls ||= {
     [0, 4] => true,
     [1, 3] => true,
@@ -28,6 +35,8 @@ def defaults args
   args.state.tank_speed ||= 1
 
   args.state.turret_shoot_period = 10
+  # Turrets can be entered as [x, y] but are immediately mapped to hashes
+  # Walls are also added where the turrets are to prevent tanks from pathing over them
   args.state.turrets ||= [
     [2, 2]
   ].each { |turret| args.state.walls[turret] = true}.map do |x, y|
@@ -172,6 +181,7 @@ end
 def calc_turrets args
   return unless args.state.tick_count.mod_zero? args.state.turret_shoot_period
   args.state.turrets.each do | turret |
+    # Finds the closest tank
     target = nil
     shortest_distance = turret[:range] + 1
     args.state.tanks.each do | tank |
@@ -181,6 +191,7 @@ def calc_turrets args
         shortest_distance = distance
       end
     end
+    # If there is a tank in range, fires a bullet
     if target
       args.state.bullets << {
         x: turret[:x],
@@ -188,6 +199,8 @@ def calc_turrets args
         w: args.state.bullet_size,
         h: args.state.bullet_size,
         path: args.state.bullet_path,
+        # Note that this makes it heat-seeking, because target is passed by reference
+        # Could do target.clone to make the bullet go to where the tank initially was
         target: target
       }
     end
@@ -200,15 +213,17 @@ def calc_bullets args
 end
 
 def render_a_star args
-  # Optimization: Calculate lines once. Bulk output an array of lines
   args.state.a_star.path.map do |tile|
+    # Map each x, y coordinate to the center of the tile and scale up
     [(tile.x + 0.5) * args.state.tile_size, (tile.y + 0.5) * args.state.tile_size]
   end.inject do | point_a,  point_b |
+    # Render the line between each point
     args.outputs.lines << [point_a.x, point_a.y, point_b.x, point_b.y, a_star_color]
     point_b
   end
 end
 
+# Moves object to target at speed
 def move object, target, speed = 1
   if target.is_a? Hash
     object[:x] += copy_sign(speed, target[:x] - object[:x])
@@ -224,7 +239,6 @@ def distance_between a_x, a_y, b_x, b_y
   (((b_x - a_x) ** 2) + ((b_y - a_y) ** 2)) ** 0.5
 end
 
-# # There is probably a better way to do this
 def copy_sign value, sign
   return 0 if sign == 0
   return value if sign > 0
@@ -241,7 +255,6 @@ def spawn_tank args
     path: args.state.tank_sprite_path,
     a_star: args.state.a_star.path.clone
   }
-  "SPawn tank complete"
 end
 
 def neighbors args, tile
